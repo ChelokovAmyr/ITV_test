@@ -49,14 +49,14 @@ const targetCity = computed(() => {
 const fetchWeather = async (city: string) => {
   loading.value = true;
   error.value = null;
-  
+
   try {
     const response = await fetch(`/api/weather?city=${city}`);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const result = await response.json();
     data.value = result as Weather;
   } catch (e) {
@@ -98,6 +98,9 @@ const getWeatherIcon = (description: string): string => {
 .weather-icon {
   font-size: 4rem;
   flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  line-height: 1;
+  user-select: none;
 }
 
 .weather-info {
