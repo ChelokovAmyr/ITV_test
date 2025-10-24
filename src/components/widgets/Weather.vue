@@ -28,7 +28,6 @@
 
 <script setup lang="ts">
 import { computed, watch, ref } from 'vue';
-import { useDataFetcher } from '@/composables/useDataFetcher';
 import { useUserStore } from '@/stores/userStore';
 import type { Weather, WeatherSettings } from '@/types';
 
@@ -39,22 +38,39 @@ interface Props {
 const props = defineProps<Props>();
 const userStore = useUserStore();
 
+const data = ref<Weather | null>(null);
+const loading = ref<boolean>(false);
+const error = ref<Error | null>(null);
+
 const targetCity = computed(() => {
   return userStore.userCity || props.settings.defaultCity;
 });
 
-const weatherUrl = computed(() => `/api/weather?city=${targetCity.value}`);
+const fetchWeather = async (city: string) => {
+  loading.value = true;
+  error.value = null;
+  
+  try {
+    const response = await fetch(`/api/weather?city=${city}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    data.value = result as Weather;
+  } catch (e) {
+    error.value = e instanceof Error ? e : new Error('Произошла неизвестная ошибка');
+    console.error('Ошибка загрузки данных:', e);
+  } finally {
+    loading.value = false;
+  }
+};
 
-const fetcher = ref<ReturnType<typeof useDataFetcher<Weather>> | null>(null);
+fetchWeather(targetCity.value);
 
-fetcher.value = useDataFetcher<Weather>(weatherUrl.value);
-
-const data = computed(() => fetcher.value?.data.value ?? null);
-const loading = computed(() => fetcher.value?.loading.value ?? false);
-const error = computed(() => fetcher.value?.error.value ?? null);
-
-watch(targetCity, () => {
-  fetcher.value = useDataFetcher<Weather>(weatherUrl.value);
+watch(targetCity, (newCity) => {
+  fetchWeather(newCity);
 });
 
 const getWeatherIcon = (description: string): string => {
